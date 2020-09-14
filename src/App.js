@@ -1,26 +1,92 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, {useCallback, useState, useRef} from "react";
+import ErrorBoundary from "./ErrorBoundary";
+import produce from "immer";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+const App = () => {
+    const nextId = useRef(1);
+    const [form, setForm] = useState({name: "", username: ""});
+    const [data, setData] = useState({
+        array: [],
+        uselessValue: null,
+    });
+
+    const onChange = useCallback((e) => {
+        const {name, value} = e.target;
+        setForm(
+            produce((draft) => {
+                draft[name] = value;
+            })
+        );
+    }, []);
+
+    const onSubmit = useCallback(
+        (e) => {
+            e.preventDefault();
+            const info = {
+                id: nextId.current,
+                name: form.name,
+                username: form.username,
+            };
+
+            setData(
+                produce((draft) => {
+                    draft.array.push(info);
+                })
+            );
+
+            setForm({
+                name: "",
+                username: "",
+            });
+            nextId.current += 1;
+        },
+        [form.username, form.name]
+    );
+
+    const onRemove = useCallback((id) => {
+        setData(
+            produce((draft) => {
+                draft.array.splice(
+                    draft.array.findIndex((info) => info.id === id),
+                    1
+                );
+            })
+        );
+    }, []);
+
+    return (
+        <ErrorBoundary>
+            <div>
+                <form onSubmit={onSubmit}>
+                    <input
+                        name="username"
+                        placeholder="ID"
+                        value={form.username}
+                        onChange={onChange}
+                    />
+                    <input
+                        name="name"
+                        placeholder="Name"
+                        value={form.name}
+                        onChange={onChange}
+                    />
+                    <button type="submit">Submit</button>
+                </form>
+                <div>
+                    <ul>
+                        {data.array.map((info) => (
+                            <li
+                                key={info.id}
+                                onDoubleClick={() => onRemove(info.id)}
+                            >
+                                {info.username} ({info.name})
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
+        </ErrorBoundary>
+    );
+};
 
 export default App;
